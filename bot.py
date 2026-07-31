@@ -1,30 +1,16 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-CC CHECKER BOT - FINAL WORKING VERSION
-"""
-
 import os
-import sys
 import random
 import re
 import sqlite3
 import asyncio
 import logging
 from datetime import datetime
-from typing import Optional, List, Dict
+from typing import Optional, Dict
 import time
 
 # ==================== TELEGRAM IMPORTS ====================
-try:
-    from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-    from telegram.ext import Application, CommandHandler, ContextTypes
-    from telegram.error import Conflict
-except ImportError:
-    os.system("pip install python-telegram-bot==20.7")
-    from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-    from telegram.ext import Application, CommandHandler, ContextTypes
-    from telegram.error import Conflict
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 # ==================== CONFIGURATION ====================
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
@@ -71,9 +57,9 @@ class Database:
                     )
                 """)
                 conn.commit()
-                logger.info("Database initialized")
+                print("✅ Database initialized")
         except Exception as e:
-            logger.error(f"Database error: {e}")
+            print(f"❌ Database error: {e}")
     
     def add_user(self, user_id: int, username: str = None, first_name: str = None):
         try:
@@ -221,6 +207,9 @@ class CCBot:
 """
         await update.message.reply_text(welcome)
     
+    async def ping(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await update.message.reply_text("🏓 Pong! I'm alive!")
+    
     async def check_card_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         args = context.args
         
@@ -306,25 +295,27 @@ async def main():
         return
     
     print(f"✅ BOT_TOKEN: {BOT_TOKEN[:10]}...")
-    print("🚀 Starting bot 24/7...\n")
+    print("🚀 Starting bot 24/7...")
     
     try:
-        application = Application.builder().token(BOT_TOKEN).build()
         bot = CCBot()
+        application = Application.builder().token(BOT_TOKEN).build()
         
         application.add_handler(CommandHandler("start", bot.start))
+        application.add_handler(CommandHandler("ping", bot.ping))
         application.add_handler(CommandHandler("check", bot.check_card_command))
         application.add_handler(CommandHandler("hits", bot.hits_command))
         application.add_handler(CommandHandler("stats", bot.stats_command))
         
+        # ✅ PRINT BEFORE POLLING
         print("✅ Bot is LIVE and running 24/7!")
+        print("📡 Waiting for messages...")
+        
         await application.run_polling(
             allowed_updates=Update.ALL_TYPES,
             drop_pending_updates=True
         )
         
-    except Conflict as e:
-        print(f"❌ Conflict error! Another instance is running. Error: {e}")
     except Exception as e:
         print(f"❌ Error: {e}")
 
