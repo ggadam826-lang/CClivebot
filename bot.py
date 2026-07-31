@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CC CHECKER BOT - V20+ FOR RAILWAY
+CC CHECKER BOT - FINAL WORKING VERSION
 """
 
 import os
@@ -15,10 +15,16 @@ from datetime import datetime
 from typing import Optional, List, Dict
 import time
 
-# ==================== TELEGRAM IMPORTS (V20+) ====================
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, ContextTypes
-from telegram.error import Conflict
+# ==================== TELEGRAM IMPORTS ====================
+try:
+    from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+    from telegram.ext import Application, CommandHandler, ContextTypes
+    from telegram.error import Conflict
+except ImportError:
+    os.system("pip install python-telegram-bot==20.7")
+    from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+    from telegram.ext import Application, CommandHandler, ContextTypes
+    from telegram.error import Conflict
 
 # ==================== CONFIGURATION ====================
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
@@ -286,16 +292,17 @@ class CCBot:
 async def main():
     print("""
     ╔══════════════════════════════════════════════════════════════╗
-    ║   🐱 CC CHECKER BOT - V20+ FOR RAILWAY                    ║
+    ║   🐱 CC CHECKER BOT - FINAL WORKING VERSION               ║
     ║   ────────────────────────────────────────────────────────   ║
-    ║   [✓] Python 3.11 compatible                               ║
-    ║   [✓] V20+ telegram library                               ║
+    ║   [✓] Python 3.11                                           ║
+    ║   [✓] V20+ telegram library                                 ║
+    ║   [✓] Environment variables ready                           ║
     ║   [✓] 24/7 hosting ready                                   ║
     ╚══════════════════════════════════════════════════════════════╝
     """)
     
     if not BOT_TOKEN:
-        print("❌ BOT_TOKEN not set!")
+        print("❌ BOT_TOKEN not set! Set environment variable: BOT_TOKEN=your_token")
         return
     
     print(f"✅ BOT_TOKEN: {BOT_TOKEN[:10]}...")
@@ -316,6 +323,8 @@ async def main():
             drop_pending_updates=True
         )
         
+    except Conflict as e:
+        print(f"❌ Conflict error! Another instance is running. Error: {e}")
     except Exception as e:
         print(f"❌ Error: {e}")
 
