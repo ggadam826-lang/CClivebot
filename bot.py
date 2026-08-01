@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CC CHECKER BOT - GUARANTEED WORKING
+CC CHECKER BOT - FINAL WORKING
 """
 
 import os
@@ -52,10 +52,10 @@ logging.basicConfig(level=logging.INFO)
 
 print("""
 ╔══════════════════════════════════════════════════════════════╗
-║   🐱 CC CHECKER BOT - GUARANTEED WORKING                  ║
+║   🐱 CC CHECKER BOT - FINAL WORKING                      ║
 ║   ────────────────────────────────────────────────────────   ║
-║   [✓] Python 3.9                                            ║
-║   [✓] telegram v13                                          ║
+║   [✓] Python 3.11                                           ║
+║   [✓] telegram v13 with fixed dependencies                  ║
 ║   [✓] 24/7 ready                                            ║
 ╚══════════════════════════════════════════════════════════════╝
 """)
@@ -227,6 +227,7 @@ class CCBot:
 Commands:
 /check card|mm|yy|cvv - Check a card
 /hits - Show total hits
+/ping - Check if bot is alive
 """)
     
     def ping(self, update, context):
