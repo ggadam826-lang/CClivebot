@@ -1,19 +1,13 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-CC CHECKER BOT - V20+ FOR PYTHON 3.13
-"""
-
 import os
-import sys
+import asyncio
+import logging
 import random
 import re
 import sqlite3
-import asyncio
-import logging
 import time
 
-# ==================== FIX: CREATE imghdr REPLACEMENT ====================
+# Fix imghdr for Python 3.13
+import sys
 if 'imghdr' not in sys.modules:
     class ImghdrMock:
         @staticmethod
@@ -37,11 +31,9 @@ if 'imghdr' not in sys.modules:
             if h.startswith(b'BM'):
                 return 'bmp'
             return None
-    
     sys.modules['imghdr'] = ImghdrMock()
-    imghdr = ImghdrMock()
 
-# ==================== TELEGRAM IMPORTS (V20+ STYLE) ====================
+# Import telegram (V20+)
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
@@ -53,11 +45,11 @@ logging.basicConfig(level=logging.INFO)
 
 print("""
 ╔══════════════════════════════════════════════════════════════╗
-║   🐱 CC CHECKER BOT - V20+ FOR PYTHON 3.13               ║
+║   🐱 CC CHECKER BOT - CLEAN VERSION                      ║
 ║   ────────────────────────────────────────────────────────   ║
 ║   [✓] Python 3.13 compatible                               ║
 ║   [✓] V20+ telegram library                                ║
-║   [✓] 24/7 ready                                           ║
+║   [✓] Clean cache install                                  ║
 ╚══════════════════════════════════════════════════════════════╝
 """)
 
@@ -209,7 +201,7 @@ class CCChecker:
         else:
             return {'status': 'DEAD', 'card_data': card_data}
 
-# ==================== TELEGRAM BOT (V20+ STYLE) ====================
+# ==================== TELEGRAM BOT ====================
 class CCBot:
     def __init__(self):
         self.db = Database()
@@ -221,7 +213,7 @@ class CCBot:
             self.db.add_user(user.id, user.username, user.first_name)
         
         await update.message.reply_text("""
-🚀 CC CHECKER BOT
+🚀 CC CHECKER BOT IS ALIVE!
 
 Commands:
 /check card|mm|yy|cvv - Check a card
@@ -297,6 +289,7 @@ async def main():
         
         print("✅ Bot is LIVE and running 24/7!")
         
+        # Start polling
         await application.run_polling(
             allowed_updates=Update.ALL_TYPES,
             drop_pending_updates=True
