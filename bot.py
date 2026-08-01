@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CC CHECKER BOT - V13 STYLE WITH imghdr FIX
+CC CHECKER BOT - V13 WITH CORRECT IMPORTS
 """
 
 import os
@@ -42,9 +42,10 @@ if 'imghdr' not in sys.modules:
     sys.modules['imghdr'] = ImghdrMock()
     imghdr = ImghdrMock()
 
-# ==================== TELEGRAM IMPORTS (V13 STYLE) ====================
+# ==================== TELEGRAM IMPORTS (V13 STYLE - CORRECT) ====================
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Filters
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
+from telegram.ext import Filters  # ✅ CORRECT: Filters from telegram.ext
 from telegram.error import Conflict, BadRequest
 
 # ==================== CONFIGURATION ====================
@@ -59,10 +60,10 @@ logger = logging.getLogger(__name__)
 
 print("""
 ╔══════════════════════════════════════════════════════════════╗
-║   🐱 CC CHECKER BOT - V13 STYLE                           ║
+║   🐱 CC CHECKER BOT - V13 CORRECT IMPORTS                 ║
 ║   ────────────────────────────────────────────────────────   ║
 ║   [✓] imghdr replacement built-in                         ║
-║   [✓] V13 telegram library                                 ║
+║   [✓] V13 telegram library with correct imports            ║
 ║   [✓] 24/7 hosting ready                                   ║
 ╚══════════════════════════════════════════════════════════════╝
 """)
@@ -332,7 +333,7 @@ def main():
     print("🚀 Starting bot 24/7...")
     
     try:
-        # V13 STYLE
+        # V13 STYLE - Updater
         updater = Updater(BOT_TOKEN, use_context=True)
         dp = updater.dispatcher
         
