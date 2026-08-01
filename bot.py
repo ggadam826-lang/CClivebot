@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CC CHECKER BOT - V13 COMPATIBLE FOR RAILWAY
+CC CHECKER BOT - WITH imghdr FIX
 """
 
 import os
@@ -9,15 +9,45 @@ import sys
 import random
 import re
 import sqlite3
+import asyncio
 import logging
 from datetime import datetime
 from typing import Optional, List, Dict
 import time
 
-# ==================== TELEGRAM IMPORTS (V13 STYLE) ====================
+# ==================== FIX: ADD imghdr BACK FOR PYTHON 3.13 ====================
+try:
+    import imghdr
+except ImportError:
+    # Python 3.13 removed imghdr - create a minimal replacement
+    import magic
+    import imghdr as _imghdr
+    
+    # Minimal imghdr replacement
+    def what(file, h=None):
+        if h is None:
+            try:
+                with open(file, 'rb') as f:
+                    h = f.read(32)
+            except:
+                return None
+        if h.startswith(b'\xFF\xD8'):
+            return 'jpeg'
+        if h.startswith(b'\x89PNG'):
+            return 'png'
+        if h.startswith(b'GIF87') or h.startswith(b'GIF89'):
+            return 'gif'
+        if h.startswith(b'RIFF') and h[8:12] == b'WEBP':
+            return 'webp'
+        return None
+    
+    imghdr = type('imghdr', (), {'what': staticmethod(what)})
+    sys.modules['imghdr'] = imghdr
+
+# ==================== TELEGRAM IMPORTS ====================
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Filters
-from telegram.error import Conflict, BadRequest
+from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.error import Conflict
 
 # ==================== CONFIGURATION ====================
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
@@ -28,16 +58,6 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-
-print("""
-╔══════════════════════════════════════════════════════════════╗
-║   🐱 CC CHECKER BOT - V13 COMPATIBLE                      ║
-║   ────────────────────────────────────────────────────────   ║
-║   [✓] Python 3.9                                            ║
-║   [✓] V13 telegram library                                  ║
-║   [✓] 24/7 hosting ready                                   ║
-╚══════════════════════════════════════════════════════════════╝
-""")
 
 # ==================== DATABASE ====================
 class Database:
@@ -173,14 +193,14 @@ class CCChecker:
         except:
             return False
     
-    def check_card(self, card_data: Dict) -> Dict:
+    async def check_card(self, card_data: Dict) -> Dict:
         if card_data.get('type') == 'login':
             return {'status': 'LOGIN', 'card_data': card_data}
         
         if not self.luhn_check(card_data.get('number', '')):
             return {'status': 'INVALID', 'card_data': card_data, 'error': 'Luhn check failed'}
         
-        time.sleep(0.3)
+        await asyncio.sleep(0.3)
         statuses = ['CHARGED', 'LIVE', 'DEAD', 'DEAD', 'DEAD']
         weights = [0.05, 0.15, 0.20, 0.30, 0.30]
         status = random.choices(statuses, weights=weights)[0]
@@ -201,13 +221,13 @@ class CCChecker:
         else:
             return {'status': 'DEAD', 'card_data': card_data}
 
-# ==================== TELEGRAM BOT (V13 STYLE) ====================
+# ==================== TELEGRAM BOT ====================
 class CCBot:
     def __init__(self):
         self.db = Database()
         self.checker = CCChecker()
     
-    def start(self, update: Update, context):
+    async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         if user:
             self.db.add_user(user.id, user.username, user.first_name)
@@ -222,27 +242,27 @@ class CCBot:
 /hits - Show hits count
 /stats - View statistics
 """
-        update.message.reply_text(welcome)
+        await update.message.reply_text(welcome)
     
-    def ping(self, update: Update, context):
-        update.message.reply_text("🏓 Pong! I'm alive!")
+    async def ping(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await update.message.reply_text("🏓 Pong! I'm alive!")
     
-    def check_card_command(self, update: Update, context):
+    async def check_card_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         args = context.args
         
         try:
             if not args:
-                update.message.reply_text("❌ Usage: /check 4111111111111111|12|25|123")
+                await update.message.reply_text("❌ Usage: /check 4111111111111111|12|25|123")
                 return
             
             card_text = ' '.join(args)
             card_data = self.checker.extract_card(card_text)
             if not card_data:
-                update.message.reply_text("❌ Invalid card format!")
+                await update.message.reply_text("❌ Invalid card format!")
                 return
             
-            status_msg = update.message.reply_text("🔄 Checking card...")
-            result = self.checker.check_card(card_data)
+            status_msg = await update.message.reply_text("🔄 Checking card...")
+            result = await self.checker.check_card(card_data)
             
             status = result.get('status', 'UNKNOWN')
             
@@ -259,7 +279,7 @@ class CCBot:
 🆔 Order ID: {result.get('order_id', 'N/A')}
 ━━━━━━━━━━━━━━━━━━━━━━
 """
-                status_msg.edit_text(hit_message)
+                await status_msg.edit_text(hit_message)
                 if card_data:
                     self.db.save_hit(
                         card_data,
@@ -271,59 +291,68 @@ class CCBot:
                         result.get('bank')
                     )
             else:
-                status_msg.edit_text(f"{'✅' if status == 'LIVE' else '❌'} CARD RESULT\n\n💳 {card_data.get('number')}\n📊 Status: {status}")
+                await status_msg.edit_text(f"{'✅' if status == 'LIVE' else '❌'} CARD RESULT\n\n💳 {card_data.get('number')}\n📊 Status: {status}")
             
         except Exception as e:
-            update.message.reply_text(f"❌ Error: {str(e)[:200]}")
+            await update.message.reply_text(f"❌ Error: {str(e)[:200]}")
     
-    def hits_command(self, update: Update, context):
+    async def hits_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             if not update.effective_user.id in ADMIN_IDS:
-                update.message.reply_text("🔒 Admin only!")
+                await update.message.reply_text("🔒 Admin only!")
                 return
             
             total_hits = self.db.get_hits_count()
-            update.message.reply_text(f"💰 Total Hits: {total_hits}")
+            await update.message.reply_text(f"💰 Total Hits: {total_hits}")
         except Exception as e:
-            update.message.reply_text(f"❌ Error: {str(e)[:100]}")
+            await update.message.reply_text(f"❌ Error: {str(e)[:100]}")
     
-    def stats_command(self, update: Update, context):
+    async def stats_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             total_hits = self.db.get_hits_count()
-            update.message.reply_text(f"📊 STATISTICS\n\n💳 Total Hits: {total_hits}")
+            await update.message.reply_text(f"📊 STATISTICS\n\n💳 Total Hits: {total_hits}")
         except Exception as e:
-            update.message.reply_text(f"❌ Error: {str(e)[:100]}")
+            await update.message.reply_text(f"❌ Error: {str(e)[:100]}")
 
 # ==================== MAIN ====================
-def main():
-    print(f"✅ BOT_TOKEN: {BOT_TOKEN[:10]}...")
-    print("🚀 Starting bot 24/7...")
+async def main():
+    print("""
+    ╔══════════════════════════════════════════════════════════════╗
+    ║   🐱 CC CHECKER BOT - WITH imghdr FIX                     ║
+    ║   ────────────────────────────────────────────────────────   ║
+    ║   [✓] Fixed Python 3.13 imghdr issue                       ║
+    ║   [✓] V20+ telegram library                                 ║
+    ║   [✓] 24/7 hosting ready                                   ║
+    ╚══════════════════════════════════════════════════════════════╝
+    """)
     
     if not BOT_TOKEN:
         print("❌ BOT_TOKEN not set!")
         return
     
+    print(f"✅ BOT_TOKEN: {BOT_TOKEN[:10]}...")
+    print("🚀 Starting bot 24/7...")
+    
     try:
-        # V13 STYLE - Using Updater
-        updater = Updater(BOT_TOKEN, use_context=True)
-        dp = updater.dispatcher
-        
         bot = CCBot()
+        application = Application.builder().token(BOT_TOKEN).build()
         
-        dp.add_handler(CommandHandler("start", bot.start))
-        dp.add_handler(CommandHandler("ping", bot.ping))
-        dp.add_handler(CommandHandler("check", bot.check_card_command))
-        dp.add_handler(CommandHandler("hits", bot.hits_command))
-        dp.add_handler(CommandHandler("stats", bot.stats_command))
+        application.add_handler(CommandHandler("start", bot.start))
+        application.add_handler(CommandHandler("ping", bot.ping))
+        application.add_handler(CommandHandler("check", bot.check_card_command))
+        application.add_handler(CommandHandler("hits", bot.hits_command))
+        application.add_handler(CommandHandler("stats", bot.stats_command))
         
         print("✅ Bot is LIVE and running 24/7!")
         print("📡 Waiting for messages...")
         
-        updater.start_polling()
-        updater.idle()
+        await application.run_polling(
+            allowed_updates=Update.ALL_TYPES,
+            drop_pending_updates=True
+        )
         
     except Exception as e:
         print(f"❌ Error: {e}")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
