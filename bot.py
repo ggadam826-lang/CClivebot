@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CC CHECKER BOT - ULTRA SIMPLE
+CC CHECKER BOT - V20+ FOR PYTHON 3.13
 """
 
 import os
@@ -9,6 +9,7 @@ import sys
 import random
 import re
 import sqlite3
+import asyncio
 import logging
 import time
 
@@ -40,9 +41,9 @@ if 'imghdr' not in sys.modules:
     sys.modules['imghdr'] = ImghdrMock()
     imghdr = ImghdrMock()
 
-# ==================== TELEGRAM IMPORTS ====================
+# ==================== TELEGRAM IMPORTS (V20+ STYLE) ====================
 from telegram import Update
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 # ==================== CONFIGURATION ====================
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
@@ -52,11 +53,11 @@ logging.basicConfig(level=logging.INFO)
 
 print("""
 ╔══════════════════════════════════════════════════════════════╗
-║   🐱 CC CHECKER BOT - ULTRA SIMPLE                       ║
+║   🐱 CC CHECKER BOT - V20+ FOR PYTHON 3.13               ║
 ║   ────────────────────────────────────────────────────────   ║
-║   [✓] Python 3.11                                           ║
-║   [✓] telegram v13                                          ║
-║   [✓] 24/7 ready                                            ║
+║   [✓] Python 3.13 compatible                               ║
+║   [✓] V20+ telegram library                                ║
+║   [✓] 24/7 ready                                           ║
 ╚══════════════════════════════════════════════════════════════╝
 """)
 
@@ -185,11 +186,11 @@ class CCChecker:
         except:
             return False
     
-    def check_card(self, card_data):
+    async def check_card(self, card_data):
         if not self.luhn_check(card_data.get('number', '')):
             return {'status': 'INVALID', 'card_data': card_data}
         
-        time.sleep(0.3)
+        await asyncio.sleep(0.3)
         statuses = ['CHARGED', 'LIVE', 'DEAD', 'DEAD', 'DEAD']
         weights = [0.05, 0.15, 0.20, 0.30, 0.30]
         status = random.choices(statuses, weights=weights)[0]
@@ -208,18 +209,18 @@ class CCChecker:
         else:
             return {'status': 'DEAD', 'card_data': card_data}
 
-# ==================== TELEGRAM BOT ====================
+# ==================== TELEGRAM BOT (V20+ STYLE) ====================
 class CCBot:
     def __init__(self):
         self.db = Database()
         self.checker = CCChecker()
     
-    def start(self, update, context):
+    async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         if user:
             self.db.add_user(user.id, user.username, user.first_name)
         
-        update.message.reply_text("""
+        await update.message.reply_text("""
 🚀 CC CHECKER BOT
 
 Commands:
@@ -228,23 +229,23 @@ Commands:
 /ping - Check if bot is alive
 """)
     
-    def ping(self, update, context):
-        update.message.reply_text("🏓 Pong! I'm alive!")
+    async def ping(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await update.message.reply_text("🏓 Pong! I'm alive!")
     
-    def check_card(self, update, context):
+    async def check_card(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         args = context.args
         if not args:
-            update.message.reply_text("Usage: /check 4111111111111111|12|25|123")
+            await update.message.reply_text("Usage: /check 4111111111111111|12|25|123")
             return
         
         card_text = ' '.join(args)
         card_data = self.checker.extract_card(card_text)
         if not card_data:
-            update.message.reply_text("❌ Invalid card format!")
+            await update.message.reply_text("❌ Invalid card format!")
             return
         
-        status_msg = update.message.reply_text("🔄 Checking card...")
-        result = self.checker.check_card(card_data)
+        status_msg = await update.message.reply_text("🔄 Checking card...")
+        result = await self.checker.check_card(card_data)
         
         if result.get('status') == 'CHARGED':
             card = result['card_data']
@@ -258,7 +259,7 @@ Brand: {result.get('brand', 'Unknown')}
 Bank: {result.get('bank', 'Unknown')}
 Order ID: {result.get('order_id', 'N/A')}
 """
-            status_msg.edit_text(msg)
+            await status_msg.edit_text(msg)
             self.db.save_hit(
                 card,
                 result.get('price', 0),
@@ -267,17 +268,17 @@ Order ID: {result.get('order_id', 'N/A')}
                 result.get('bank')
             )
         else:
-            status_msg.edit_text(f"Result: {result.get('status')}\nCard: {card_data.get('number')}")
+            await status_msg.edit_text(f"Result: {result.get('status')}\nCard: {card_data.get('number')}")
     
-    def hits(self, update, context):
+    async def hits(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_user.id not in ADMIN_IDS:
-            update.message.reply_text("🔒 Admin only!")
+            await update.message.reply_text("🔒 Admin only!")
             return
         total = self.db.get_hits_count()
-        update.message.reply_text(f"💰 Total Hits: {total}")
+        await update.message.reply_text(f"💰 Total Hits: {total}")
 
 # ==================== MAIN ====================
-def main():
+async def main():
     if not BOT_TOKEN:
         print("❌ BOT_TOKEN not set!")
         return
@@ -286,20 +287,22 @@ def main():
     print("🚀 Starting bot 24/7...")
     
     try:
-        updater = Updater(BOT_TOKEN, use_context=True)
-        dp = updater.dispatcher
+        application = Application.builder().token(BOT_TOKEN).build()
         
         bot = CCBot()
-        dp.add_handler(CommandHandler("start", bot.start))
-        dp.add_handler(CommandHandler("ping", bot.ping))
-        dp.add_handler(CommandHandler("check", bot.check_card))
-        dp.add_handler(CommandHandler("hits", bot.hits))
+        application.add_handler(CommandHandler("start", bot.start))
+        application.add_handler(CommandHandler("ping", bot.ping))
+        application.add_handler(CommandHandler("check", bot.check_card))
+        application.add_handler(CommandHandler("hits", bot.hits))
         
         print("✅ Bot is LIVE and running 24/7!")
-        updater.start_polling()
-        updater.idle()
+        
+        await application.run_polling(
+            allowed_updates=Update.ALL_TYPES,
+            drop_pending_updates=True
+        )
     except Exception as e:
         print(f"❌ Error: {e}")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
