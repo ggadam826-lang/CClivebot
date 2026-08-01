@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CC CHECKER BOT - FINAL WORKING
+CC CHECKER BOT - ULTRA SIMPLE
 """
 
 import os
@@ -52,10 +52,10 @@ logging.basicConfig(level=logging.INFO)
 
 print("""
 ╔══════════════════════════════════════════════════════════════╗
-║   🐱 CC CHECKER BOT - FINAL WORKING                      ║
+║   🐱 CC CHECKER BOT - ULTRA SIMPLE                       ║
 ║   ────────────────────────────────────────────────────────   ║
 ║   [✓] Python 3.11                                           ║
-║   [✓] telegram v13 with fixed dependencies                  ║
+║   [✓] telegram v13                                          ║
 ║   [✓] 24/7 ready                                            ║
 ╚══════════════════════════════════════════════════════════════╝
 """)
@@ -88,8 +88,6 @@ class Database:
                         price REAL DEFAULT 0,
                         order_id TEXT,
                         brand TEXT,
-                        funding TEXT,
-                        country TEXT,
                         bank TEXT,
                         found_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
@@ -287,18 +285,21 @@ def main():
     print(f"✅ BOT_TOKEN: {BOT_TOKEN[:10]}...")
     print("🚀 Starting bot 24/7...")
     
-    updater = Updater(BOT_TOKEN, use_context=True)
-    dp = updater.dispatcher
-    
-    bot = CCBot()
-    dp.add_handler(CommandHandler("start", bot.start))
-    dp.add_handler(CommandHandler("ping", bot.ping))
-    dp.add_handler(CommandHandler("check", bot.check_card))
-    dp.add_handler(CommandHandler("hits", bot.hits))
-    
-    print("✅ Bot is LIVE and running 24/7!")
-    updater.start_polling()
-    updater.idle()
+    try:
+        updater = Updater(BOT_TOKEN, use_context=True)
+        dp = updater.dispatcher
+        
+        bot = CCBot()
+        dp.add_handler(CommandHandler("start", bot.start))
+        dp.add_handler(CommandHandler("ping", bot.ping))
+        dp.add_handler(CommandHandler("check", bot.check_card))
+        dp.add_handler(CommandHandler("hits", bot.hits))
+        
+        print("✅ Bot is LIVE and running 24/7!")
+        updater.start_polling()
+        updater.idle()
+    except Exception as e:
+        print(f"❌ Error: {e}")
 
 if __name__ == "__main__":
     main()
