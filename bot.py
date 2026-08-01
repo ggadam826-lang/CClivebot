@@ -45,7 +45,7 @@ if 'imghdr' not in sys.modules:
 # ==================== TELEGRAM IMPORTS (V13 STYLE - CORRECT) ====================
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
-from telegram.ext import Filters  # ✅ CORRECT: Filters from telegram.ext
+from telegram.ext.filters import Filters  # ✅ CORRECT: Filters from telegram.ext.filters
 from telegram.error import Conflict, BadRequest
 
 # ==================== CONFIGURATION ====================
