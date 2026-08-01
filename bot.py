@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CC CHECKER BOT - WITH imghdr FIX
+CC CHECKER BOT - SELF-CONTAINED imghdr FIX
 """
 
 import os
@@ -15,34 +15,37 @@ from datetime import datetime
 from typing import Optional, List, Dict
 import time
 
-# ==================== FIX: ADD imghdr BACK FOR PYTHON 3.13 ====================
-try:
-    import imghdr
-except ImportError:
-    # Python 3.13 removed imghdr - create a minimal replacement
-    import magic
-    import imghdr as _imghdr
-    
-    # Minimal imghdr replacement
-    def what(file, h=None):
-        if h is None:
-            try:
-                with open(file, 'rb') as f:
-                    h = f.read(32)
-            except:
+# ==================== FIX: CREATE imghdr REPLACEMENT (NO EXTERNAL MODULES) ====================
+if 'imghdr' not in sys.modules:
+    # Create a minimal imghdr replacement
+    class ImghdrMock:
+        @staticmethod
+        def what(file, h=None):
+            if h is None:
+                try:
+                    with open(file, 'rb') as f:
+                        h = f.read(32)
+                except:
+                    return None
+            if not h:
                 return None
-        if h.startswith(b'\xFF\xD8'):
-            return 'jpeg'
-        if h.startswith(b'\x89PNG'):
-            return 'png'
-        if h.startswith(b'GIF87') or h.startswith(b'GIF89'):
-            return 'gif'
-        if h.startswith(b'RIFF') and h[8:12] == b'WEBP':
-            return 'webp'
-        return None
+            # Common image signatures
+            if h.startswith(b'\xFF\xD8\xFF'):
+                return 'jpeg'
+            if h.startswith(b'\x89PNG\r\n\x1a\n'):
+                return 'png'
+            if h.startswith(b'GIF87') or h.startswith(b'GIF89'):
+                return 'gif'
+            if h.startswith(b'RIFF') and len(h) > 12 and h[8:12] == b'WEBP':
+                return 'webp'
+            if h.startswith(b'BM'):
+                return 'bmp'
+            if h.startswith(b'II') or h.startswith(b'MM'):
+                return 'tiff'
+            return None
     
-    imghdr = type('imghdr', (), {'what': staticmethod(what)})
-    sys.modules['imghdr'] = imghdr
+    sys.modules['imghdr'] = ImghdrMock()
+    imghdr = ImghdrMock()
 
 # ==================== TELEGRAM IMPORTS ====================
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -58,6 +61,16 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+
+print("""
+╔══════════════════════════════════════════════════════════════╗
+║   🐱 CC CHECKER BOT - SELF-CONTAINED                      ║
+║   ────────────────────────────────────────────────────────   ║
+║   [✓] imghdr replacement built-in                         ║
+║   [✓] No external dependencies                             ║
+║   [✓] 24/7 hosting ready                                   ║
+╚══════════════════════════════════════════════════════════════╝
+""")
 
 # ==================== DATABASE ====================
 class Database:
@@ -316,16 +329,6 @@ class CCBot:
 
 # ==================== MAIN ====================
 async def main():
-    print("""
-    ╔══════════════════════════════════════════════════════════════╗
-    ║   🐱 CC CHECKER BOT - WITH imghdr FIX                     ║
-    ║   ────────────────────────────────────────────────────────   ║
-    ║   [✓] Fixed Python 3.13 imghdr issue                       ║
-    ║   [✓] V20+ telegram library                                 ║
-    ║   [✓] 24/7 hosting ready                                   ║
-    ╚══════════════════════════════════════════════════════════════╝
-    """)
-    
     if not BOT_TOKEN:
         print("❌ BOT_TOKEN not set!")
         return
